@@ -47,7 +47,6 @@ function convertData(d) {
   for (let i = 0, n = edges.length; i < n; i++) {
     let source = edges[i][0];
     let target = edges[i][1];
-    console.log('' + source + ' -> ' + target);
     graph[source]['out'].push(target);
     graph[target]['in'].push(source);
   }
@@ -68,66 +67,53 @@ d3.json("genealogy_graph.json", function(error, d) {
 });
 
 
-function getEdgeSubset(id) {
-  // walk the tree of ancestors
-  let unprocessed = [id];
-  let processed = [];
+function ancestryGraph(id) {
+  // Construct the graph of ancestors of the given node
+  // Output is a d3-compatible edge list
+  let nodeSubset = [];
   let edgeSubset = [];
+  let unprocessed = [id];
+  let processed = new Set([]);
+
   while (unprocessed.length > 0) {
     let next = unprocessed.pop();
-    let parents = data.parents[next];
+    processed.add(next);  // Ignore any self loops, which would be odd
+    nodeSubset.push(next);
+    let parents = data[next]['in'];
 
-    parents.map(function(x) {
-      if (!processed.contains(x)) {
-        unprocessed.push(x);
+    for (let parentId of parents) {
+      edgeSubset.push([parentId, next]);
+      if (!processed.has(parentId)) {
+        unprocessed.push(parentId);
       }
-      // edgeSubset.push(data.edges[i]);
-    });
-  }
-  for (let i = 0; i < data.edges.length; i++) {
-    if (data.edges[i].target == id) {
     }
   }
-  return edgeSubset;
-}
 
+  let nodes = nodeSubset.map(function(x) { return {'id': data[x]['name']}});
+  let edges = edgeSubset.map(function(e) { return {'source': e[0], 'target': e[1]}});
 
-function getNodeSubset(edgeSubset) {
-  let nodeSubset = [];
-  let nodesDict = [];
-  for (let i = 0; i < edgeSubset.length; i++) {
-    nodesDict[edgeSubset[i].source] = 1;
-    nodesDict[edgeSubset[i].target] = 1;
+  return {
+    'nodes': nodes,
+    'edges': edges,
   }
-
-  for (let id in nodesDict) {
-    let mgp_id = parseInt(id);
-    nodeSubset.push({'id': mgp_id, 'name': data.nodes[data.idToIndex[id]].name});
-  }
-
-  return nodeSubset;
 }
 
 
 function createGraphFor(id) {
-  let edgeSubset = getEdgeSubset(id);
-  let nodeSubset = getNodeSubset(edgeSubset);
-  console.log(edgeSubset);
-  console.log(nodeSubset);
+  let graph = ancestryGraph(id);
+  console.log(graph);
 
   let nodes = svg.append("g")
                  .selectAll("circle")
-                 .data(nodeSubset)
+                 .data(graph.nodes)
                  .enter().append("circle");
 
-  /*
   nodes.append("title")
-       .text(function(id) { return data.nodes[id]; });
-  */
+       .text(function(node) { return node['id']; });
 
   let edges = svg.append("g")
                  .selectAll("line")
-                 .data(edgeSubset)
+                 .data(graph.edges)
                  .enter().append("line");
 
   return {nodes: nodes, edges: edges};
