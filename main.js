@@ -8,9 +8,10 @@ let svg = d3.select("body").insert("svg", ":first-child")
 
 var data = null;
 var simulation = d3.forceSimulation()
-    .force("link", d3.forceLink().id(function(d) { return d.id; }))
+    .force("link", d3.forceLink().id(function(d) { return d.id.toString(); }))
     .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(width / 2, height / 2));
+window.simulation = simulation;  // for debugging
 
 
 function convertData(d) {
@@ -89,8 +90,8 @@ function ancestryGraph(id) {
     }
   }
 
-  let nodes = nodeSubset.map(function(x) { return {'id': data[x]['name']}});
-  let edges = edgeSubset.map(function(e) { return {'source': e[0], 'target': e[1]}});
+  let nodes = nodeSubset.map(function(x) { return {'id': x.toString()}});
+  let edges = edgeSubset.map(function(e) { return {'source': e[0].toString(), 'target': e[1].toString()}});
 
   return {
     'nodes': nodes,
@@ -109,7 +110,7 @@ function createGraphFor(id) {
                  .enter().append("circle");
 
   nodes.append("title")
-       .text(function(node) { return node['id']; });
+       .text(function(node) { return data[parseInt(node['id'])]['name']; });
 
   let edges = svg.append("g")
                  .selectAll("line")
