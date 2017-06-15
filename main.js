@@ -14,46 +14,53 @@ var simulation = d3.forceSimulation()
 
 
 function convertData(d) {
-  // the input is stored compressed, but d3-force requires a specific dict format
+  // decompress the input
   let nodes = d.nodes;
   let edges = d.edges;
-  let parents = [];
-  let children = [];
-  let idToIndex = [];
 
-  let newNodes = [];
-  let i = 0;
+  let allKeys = Object.keys(nodes).map(x => parseInt(x));
+  let maxKey = 0;
+  for (let i = 0, n = allKeys.length; i < n; i++) {
+    if (allKeys[i] > maxKey) {
+      maxKey = allKeys[i];
+    }
+  }
+  let graph = new Array(1 + maxKey);
+
+  // graph is a list whose index is the id, and the entries are objects of the form
+  //
+  // {
+  //   name: str,
+  //   in: [int],   <-- list of ids of incoming edges
+  //   out: [int],  <-- list of ids of outgoing edges
+  // }
+
   for (let id in nodes) {
     let mgp_id = parseInt(id);
-    newNodes.push({'id': mgp_id, 'name': nodes[id]});
-    children.push([]);
-    parents.push([]);
-    idToIndex[mgp_id] = i;
-    i += 1;
+    graph[mgp_id] = {
+      'name': nodes[id],
+      'in': [],
+      'out': [],
+    };
   }
 
-  let newEdges = [];
-  for (let i = 0; i < edges.length; i++) {
-    newEdges.push({'source': edges[i][0], 'target': edges[i][1]});
-    children[idToIndex[edges[i][0]]].push(edges[i][1]);
-    parents[idToIndex[edges[i][1]]].push(edges[i][0]);
+  for (let i = 0, n = edges.length; i < n; i++) {
+    let source = edges[i][0];
+    let target = edges[i][1];
+    console.log('' + source + ' -> ' + target);
+    graph[source]['out'].push(target);
+    graph[target]['in'].push(source);
   }
 
-  return {
-    'nodes': newNodes,
-    'edges': newEdges,
-    'parents': parents,
-    'children': children,
-    'idToIndex': idToIndex,
-  }
+  return graph;
 }
 
 
 d3.json("genealogy_graph.json", function(error, d) {
   if (error) throw error;
-  console.log('Done loading data'); 
+  console.log('Done loading data');
   data = convertData(d);
-  console.log('Done converting data'); 
+  console.log('Done converting data');
 
   let graphSVG = createGraphFor(203505);
   setupGraphStyle(graphSVG);
@@ -69,7 +76,7 @@ function getEdgeSubset(id) {
   while (unprocessed.length > 0) {
     let next = unprocessed.pop();
     let parents = data.parents[next];
-    
+
     parents.map(function(x) {
       if (!processed.contains(x)) {
         unprocessed.push(x);
@@ -117,7 +124,7 @@ function createGraphFor(id) {
   nodes.append("title")
        .text(function(id) { return data.nodes[id]; });
   */
-  
+
   let edges = svg.append("g")
                  .selectAll("line")
                  .data(edgeSubset)
