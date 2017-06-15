@@ -1,15 +1,27 @@
 import * as d3 from 'd3';
 
-let width = 800;
-let height = 600;
+let width = 1000;
+let height = 1500;
 let svg = d3.select("body").insert("svg", ":first-child")
                            .attr("width", width)
                            .attr("height", height);
 
+// define arrowheads
+svg.append("svg:defs").append("svg:marker")
+    .attr("id", "triangle")
+    .attr("refX", 6)
+    .attr("refY", 6)
+    .attr("markerWidth", 5)
+    .attr("markerHeight", 5)
+    .attr("orient", "auto")
+    .append("path")
+    .attr("d", "M 0 0 12 6 0 12 3 6")
+    .style("fill", "black");
+
 var data = null;
 var simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(function(d) { return d.id.toString(); }))
-    .force("charge", d3.forceManyBody())
+    .force("charge", d3.forceManyBody().strength(-1.5))  // TODO: use d3.forceY to push ancestors up
     .force("center", d3.forceCenter(width / 2, height / 2));
 window.simulation = simulation;  // for debugging
 
@@ -104,7 +116,7 @@ function createGraphFor(id) {
   let graph = ancestryGraph(id);
   console.log(graph);
 
-  let nodes = svg.append("g")
+  let nodes = svg.append("g").attr('class', 'nodes')
                  .selectAll("circle")
                  .data(graph.nodes)
                  .enter().append("circle");
@@ -112,7 +124,7 @@ function createGraphFor(id) {
   nodes.append("title")
        .text(function(node) { return data[parseInt(node['id'])]['name']; });
 
-  let edges = svg.append("g")
+  let edges = svg.append("g").attr('class', 'links')
                  .selectAll("line")
                  .data(graph.edges)
                  .enter().append("line");
@@ -123,17 +135,14 @@ function createGraphFor(id) {
 
 function setupGraphStyle(graphSVG) {
   let {nodes, edges} = graphSVG;
-
-  nodes.attr("class", "nodes")
-       .attr("r", 5);
-
-  edges.attr("class", "edges")
-       .attr("stroke-width", 1);
+  nodes.attr("r", 5);
+  edges.attr("stroke-width", 1)
+       .attr("marker-end", "url(#triangle)");
 }
 
 
 function dragstarted(d) {
-  if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+  if (!d3.event.active) simulation.alphaTarget(0.5).restart();
   d.fx = d.x;
   d.fy = d.y;
 }
@@ -146,7 +155,7 @@ function dragged(d) {
 
 
 function dragended(d) {
-  if (!d3.event.active) simulation.alphaTarget(0);
+  if (!d3.event.active) simulation.alphaTarget(0.3);
   d.fx = null;
   d.fy = null;
 }
@@ -155,24 +164,21 @@ function dragended(d) {
 function setupBehavior(graphSVG) {
   let { nodes, edges } = graphSVG;
 
+  function ticked() {
+    edges.attr("x1", function(d) { window.edge_d = d; return d.source.x; })
+         .attr("y1", function(d) { return d.source.y; })
+         .attr("x2", function(d) { return d.target.x; })
+         .attr("y2", function(d) { return d.target.y; });
+
+    nodes.attr("cx", function(d) { window.node_d = d; return d.x; })
+         .attr("cy", function(d) { return d.y; });
+  }
+
   nodes.call(d3.drag()
                .on("start", dragstarted)
                .on("drag", dragged)
                .on("end", dragended));
 
-  simulation.nodes(nodes)
-            .on("tick", ticked);
-
-  simulation.force("link")
-            .links(edges);
-
-  function ticked() {
-    edges.attr("x1", function(d) { return d.source.x; })
-         .attr("y1", function(d) { return d.source.y; })
-         .attr("x2", function(d) { return d.target.x; })
-         .attr("y2", function(d) { return d.target.y; });
-
-    nodes.attr("cx", function(d) { return d.x; })
-         .attr("cy", function(d) { return d.y; });
-  }
+  simulation.nodes(nodes.data()).on("tick", ticked);
+  simulation.force("link").links(edges.data());
 }
