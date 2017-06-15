@@ -1,0 +1,9 @@
+{
+  "name": "math-genealogy-visualizer",
+  "version": "1.0.0",
+  "description": "Visualize the math genealogy tree",
+  "main": "index.js",
+  "repository": "https://github.com/j2kun/math-genealogy-visualizer",
+  "author": "Jeremy Kun",
+  "license": "MIT"
+}
