@@ -3,3 +3,5 @@ js/build
 js/yarn.lock
 
 *DS_Store*
+
+build/*
