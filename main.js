@@ -124,7 +124,7 @@ function createGraphFor(id) {
   nodes.append("title")
        .text(function(node) { return data[parseInt(node['id'])]['name']; });
 
-  let edges = svg.append("g").attr('class', 'links')
+  let edges = svg.append("g").attr('class', 'edges')
                  .selectAll("line")
                  .data(graph.edges)
                  .enter().append("line");
