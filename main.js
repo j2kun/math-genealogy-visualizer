@@ -1,27 +1,29 @@
 import * as d3 from 'd3';
 
-let width = 1000;
-let height = 1500;
+let width = 3000;
+let height = 3000;
 let svg = d3.select("body").insert("svg", ":first-child")
                            .attr("width", width)
                            .attr("height", height);
 
 // define arrowheads
 svg.append("svg:defs").append("svg:marker")
-    .attr("id", "triangle")
-    .attr("refX", 6)
-    .attr("refY", 6)
-    .attr("markerWidth", 5)
-    .attr("markerHeight", 5)
+    .attr("id", "arrowhead")
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 25)
+    .attr("refY", 0)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
     .attr("orient", "auto")
-    .append("path")
-    .attr("d", "M 0 0 12 6 0 12 3 6")
-    .style("fill", "black");
+  .append("path")
+    .attr("d", "M0,-5L10,0L0,5 L10,0 L0, -5")
+    .style("stroke", "#4679BD")
+    .style("opacity", "0.6");
 
 var data = null;
 var simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(function(d) { return d.id.toString(); }))
-    .force("charge", d3.forceManyBody().strength(-1.5))  // TODO: use d3.forceY to push ancestors up
+    .force("charge", d3.forceManyBody().strength(-30))  // TODO: use d3.forceY to push ancestors up
     .force("center", d3.forceCenter(width / 2, height / 2));
 window.simulation = simulation;  // for debugging
 
@@ -116,28 +118,34 @@ function createGraphFor(id) {
   let graph = ancestryGraph(id);
   console.log(graph);
 
-  let nodes = svg.append("g").attr('class', 'nodes')
-                 .selectAll("circle")
-                 .data(graph.nodes)
-                 .enter().append("circle");
-
-  nodes.append("title")
-       .text(function(node) { return data[parseInt(node['id'])]['name']; });
-
   let edges = svg.append("g").attr('class', 'edges')
                  .selectAll("line")
                  .data(graph.edges)
                  .enter().append("line");
 
-  return {nodes: nodes, edges: edges};
+  let allNodes = svg.append("g").attr('class', 'nodes')
+  let nodeContainers = allNodes.selectAll("g")
+                               .data(graph.nodes)
+                               .enter().append("g");
+
+  let texts = nodeContainers.append("text")
+                            .attr("dx", 10)
+                            .attr("dy", ".35em")
+                            .text(function(d) { return data[parseInt(d['id'])]['name']; })
+
+  let nodes = nodeContainers.append("circle");
+
+  return {nodes: nodes, edges: edges, texts: texts};
 }
 
 
 function setupGraphStyle(graphSVG) {
   let {nodes, edges} = graphSVG;
-  nodes.attr("r", 5);
+  nodes.attr("r", 10)
+       .style("stroke", "#4679BD")
+       .style("opacity", "0.6");
   edges.attr("stroke-width", 1)
-       .attr("marker-end", "url(#triangle)");
+       .attr("marker-end", "url(#arrowhead)");
 }
 
 
@@ -162,7 +170,7 @@ function dragended(d) {
 
 
 function setupBehavior(graphSVG) {
-  let { nodes, edges } = graphSVG;
+  let { nodes, edges, texts } = graphSVG;
 
   function ticked() {
     edges.attr("x1", function(d) { window.edge_d = d; return d.source.x; })
@@ -172,6 +180,9 @@ function setupBehavior(graphSVG) {
 
     nodes.attr("cx", function(d) { window.node_d = d; return d.x; })
          .attr("cy", function(d) { return d.y; });
+
+    texts.attr('x', function (d) { return d.x; })
+         .attr('y', function (d) { return d.y; });
   }
 
   nodes.call(d3.drag()
