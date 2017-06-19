@@ -1,16 +1,19 @@
-import * as d3 from 'd3';
 import * as dagreD3 from 'dagre-d3';
+import * as graphlibDot from 'graphlib-dot';
 
 var data = null;  // Contains the raw graph data
-let width = 3000;
-let height = 3000;
+let width = 1280;
+let height = 1000;
 let svg = d3.select("body").insert("svg", ":first-child")
                            .attr("width", width)
-                           .attr("height", height);
-let inner = svg.append("g");
+                           .attr("height", height)
+                           .style("cursor", "move");
+                           
+let initialScale = '0.2';
+let inner = svg.append("g").attr("transform", `scale(${initialScale},${initialScale})`);
 
 // Set up zoom support
-let zoom = d3.behavior.zoom().on("zoom", function() {
+let zoom = d3.behavior.zoom().scale(initialScale).on("zoom", function() {
   inner.attr("transform", "translate(" + d3.event.translate + ")" +
                               "scale(" + d3.event.scale + ")");
 });
@@ -64,7 +67,27 @@ d3.json("genealogy_graph.json", function(error, d) {
   data = convertData(d);
   console.log('Done converting data');
 
-  let graphSVG = createGraphFor(203505);
+  // graph is the output of the dagre-d3 dot parser
+  let graph = createGraphFor(203505);
+  
+  // Center the dag
+  var zoomScale = 1;
+  // Get Dagre Graph dimensions
+  var graphWidth = graph.graph().width;
+  var graphHeight = graph.graph().height;
+  // Get SVG dimensions
+  var width = parseInt(svg.style("width").replace(/px/, ""));
+  var height = parseInt(svg.style("height").replace(/px/, ""));
+
+  // Calculate applicable scale for zoom
+  zoomScale = Math.min(width / graphWidth, height / graphHeight);
+
+  var translate = [(width/2) - ((graphWidth * zoomScale)/2), 0];
+  console.log(translate);
+  console.log(zoomScale);
+  zoom.translate(translate);
+  zoom.scale(zoomScale);
+  zoom.event(inner);
 });
 
 
@@ -104,16 +127,22 @@ function ancestryGraph(id) {
 var render = dagreD3.render();
 
 function createGraphFor(id) {
+  var graph;
   let edgeStrings = ancestryGraph(id);
-  console.log(edgeStrings[0]);
+  let graphString = "digraph {";
+  for (let edge of edgeStrings) {
+    graphString = graphString + " " + edge + " ";
+  }
+  graphString = graphString + "}";
 
   try {
-    g = graphlibDot.read(inputGraph.value);
+    graph = graphlibDot.read(graphString);
   } catch (e) {
     console.log('Failed to parse graph...')
     throw e;
   }
 
   // Render the graph into svg g
-  d3.select("svg g").call(render, g);
+  d3.select("svg g").call(render, graph);
+  return graph;
 }

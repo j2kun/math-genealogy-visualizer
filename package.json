@@ -22,8 +22,8 @@
     "vinyl-source-stream": "^1.1.0"
   },
   "dependencies": {
-    "d3": "3.5.17",
     "dagre": "^0.7.4",
-    "dagre-d3": "^0.4.17"
+    "dagre-d3": "^0.4.17",
+    "graphlib-dot": "^0.6.2"
   }
 }
