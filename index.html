@@ -3,6 +3,7 @@
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF8">
 <title>Math Genealogy Visualizer</title>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
 <style>
 svg {
   border: 1px solid #999;
@@ -21,7 +22,7 @@ svg {
   stroke-width: 1.5px;
 }
 
-.cluster rect {
+rect {
   stroke: #333;
   fill: #000;
   fill-opacity: 0.1;
@@ -38,16 +39,71 @@ svg {
   display: none;
   color: #ff0000;
 }
+
+.dropdown {
+  max-width: 200px;
+  z-index: 10;
+  max-height: 2em;
+  overflow: visible;
+  border: 1px solid black;
+}
+
+#autocomplete_results {
+  padding: 5px 0;
+  margin: 0;
+  background-color: #ffffff;
+  max-width: 200px;
+}
+
+.autocomplete_option {
+  padding: 5px 30px 5px 10px;
+  display: block;
+  cursor: pointer;
+  max-width: 200px;
+}
+
+.autocomplete_option:hover {
+  background-color: #dddddd;
+}
+
+.spinner {
+    border: 16px solid #f3f3f3; /* Light grey */
+    border-top: 16px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 </style>
 </head>
 <body>
-<p>
-<label>Name: </label> <input id="name_input" value="Jeremy Kun" /> 
-<button type="button" id="ancestry_button">Draw Ancestry Tree</button>
-</p>
-<p>
-<span class="error" id="name_not_found">Name not found</span>
-</p>
+
+<div id="loading">
+<div class="spinner"></div>
+<p>Loading...</p>
+</div>
+
+<div id="hide_while_loading">
+  <form action="">
+  <input id="name_input" placeholder="Enter a name" /> 
+  </form>
+
+  <div id="dropdown">
+    <ul id="autocomplete_results"> </ul>
+  </div>
+
+  <button type="button" id="ancestry_button">Draw Ancestry Tree</button>
+
+  <p>
+    <span class="error" id="name_not_found">Name not found</span>
+  </p>
+</div>
+
 <script src="http://d3js.org/d3.v3.js"></script>
 <script src="build/main.bundle.js"></script>
 </body>

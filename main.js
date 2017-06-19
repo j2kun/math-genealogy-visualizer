@@ -1,7 +1,9 @@
 import * as dagreD3 from 'dagre-d3';
 import * as graphlibDot from 'graphlib-dot';
+import * as FuzzySet from 'fuzzyset.js';
 
 var data = null;  // Contains the raw graph data
+var fuzzyNames = FuzzySet.default();
 let width = 1280;
 let height = 1000;
 let svg = d3.select("body").append("svg")
@@ -43,11 +45,15 @@ function convertData(d) {
 
   for (let id in nodes) {
     let mgp_id = parseInt(id);
-    graph[mgp_id] = {
-      'name': nodes[id],
-      'in': [],
-      'out': [],
-    };
+    let name = nodes[id];
+    if (name) {
+      graph[mgp_id] = {
+        'name': name,
+        'in': [],
+        'out': [],
+      };
+      fuzzyNames.add(name);
+    }
   }
 
   for (let i = 0, n = edges.length; i < n; i++) {
@@ -57,7 +63,44 @@ function convertData(d) {
     graph[target]['in'].push(source);
   }
 
+  d3.select("#name_input").on("keyup", suggest);
   return graph;
+}
+
+
+function setSearchBar() {
+  window.example = this;
+  console.log('Selecting ' + this.innerText);
+  d3.select('#name_input').property('value', this.innerText);
+  d3.select('#autocomplete_results').style('display', 'none');
+}
+
+
+function suggest() {
+  let searchString = d3.select('#name_input').property('value');
+  console.log('Autocompleting ' + searchString);
+
+  var results = null;
+  if (searchString.length >= 3) {
+    results = fuzzyNames.get(searchString, '', 0.3);
+    window.results = results;
+  }
+
+  let autocomplete = d3.select('#autocomplete_results');
+  let dataList = autocomplete.selectAll('li')
+                             .data([]).exit().remove();
+  if (results) {
+    let dataList = autocomplete.selectAll('option').data(results);
+
+    dataList.enter()
+            .append('li')
+            .attr('class', 'autocomplete_option')
+            .attr('value', function (d) { return d[1]; })
+            .text(function (d) { return d[1]; });
+  }
+
+  d3.selectAll('.autocomplete_option').on('click', setSearchBar);
+  autocomplete.style('display', 'block');
 }
 
 
@@ -66,9 +109,8 @@ d3.json("genealogy_graph.json", function(error, d) {
   console.log('Done loading data');
   data = convertData(d);
   console.log('Done converting data');
-
-  // graph is the output of the dagre-d3 dot parser
-  let graph = createGraphFor(203505);
+  d3.select('#hide_while_loading').style('display', 'block');
+  d3.select('#loading').style('display', 'none');
 });
 
 
@@ -160,3 +202,7 @@ d3.select('#ancestry_button').on('click', function() {
     d3.select("#name_not_found").style('display', 'block');
   }
 });
+
+d3.select('#autocomplete_results').style('display', 'none');
+d3.select('#loading').style('display', 'block');
+d3.select('#hide_while_loading').style('display', 'none');
