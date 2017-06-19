@@ -33,28 +33,21 @@ svg {
   stroke-width: 1.5px;
   fill: none;
 }
-</style>
-
-<style>
-h1, h2 {
-  color: #333;
-}
-
-textarea {
-  width: 800px;
-}
-
-label {
-  margin-top: 1em;
-  display: block;
-}
 
 .error {
-  color: red;
+  display: none;
+  color: #ff0000;
 }
 </style>
 </head>
 <body>
+<p>
+<label>Name: </label> <input id="name_input" value="Jeremy Kun" /> 
+<button type="button" id="ancestry_button">Draw Ancestry Tree</button>
+</p>
+<p>
+<span class="error" id="name_not_found">Name not found</span>
+</p>
 <script src="http://d3js.org/d3.v3.js"></script>
 <script src="build/main.bundle.js"></script>
 </body>

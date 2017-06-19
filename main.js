@@ -4,11 +4,11 @@ import * as graphlibDot from 'graphlib-dot';
 var data = null;  // Contains the raw graph data
 let width = 1280;
 let height = 1000;
-let svg = d3.select("body").insert("svg", ":first-child")
+let svg = d3.select("body").append("svg")
                            .attr("width", width)
                            .attr("height", height)
                            .style("cursor", "move");
-                           
+
 let initialScale = '0.2';
 let inner = svg.append("g").attr("transform", `scale(${initialScale},${initialScale})`);
 
@@ -69,25 +69,6 @@ d3.json("genealogy_graph.json", function(error, d) {
 
   // graph is the output of the dagre-d3 dot parser
   let graph = createGraphFor(203505);
-  
-  // Center the dag
-  var zoomScale = 1;
-  // Get Dagre Graph dimensions
-  var graphWidth = graph.graph().width;
-  var graphHeight = graph.graph().height;
-  // Get SVG dimensions
-  var width = parseInt(svg.style("width").replace(/px/, ""));
-  var height = parseInt(svg.style("height").replace(/px/, ""));
-
-  // Calculate applicable scale for zoom
-  zoomScale = Math.min(width / graphWidth, height / graphHeight);
-
-  var translate = [(width/2) - ((graphWidth * zoomScale)/2), 0];
-  console.log(translate);
-  console.log(zoomScale);
-  zoom.translate(translate);
-  zoom.scale(zoomScale);
-  zoom.event(inner);
 });
 
 
@@ -113,13 +94,13 @@ function ancestryGraph(id) {
     }
   }
 
-  let edges = edgeSubset.map(function(e) { 
+  let edges = edgeSubset.map(function(e) {
     let sourceName = nodeIdToName[e[0].toString()];
     let targetName = nodeIdToName[e[1].toString()];
     return '"' + sourceName + '" -> "' + targetName + '";';
   });
 
-  return edges; 
+  return edges;
 }
 
 
@@ -144,5 +125,38 @@ function createGraphFor(id) {
 
   // Render the graph into svg g
   d3.select("svg g").call(render, graph);
+
+  // Zoom and translate to center
+  let graphWidth = graph.graph().width;
+  let graphHeight = graph.graph().height;
+  let zoomScale = Math.min(width / graphWidth, height / graphHeight);
+  let translate = [(width/2) - ((graphWidth * zoomScale)/2), 0];
+  zoom.translate(translate);
+  zoom.scale(zoomScale);
+  zoom.event(inner);
+
   return graph;
 }
+
+
+d3.select('#ancestry_button').on('click', function() {
+  let name = d3.select('#name_input').property("value");
+  console.log('Looking up ' + name);
+  name = name.trim();
+
+  let found_id = null;
+  for (let i = 0, n = data.length; i < n; i++) {
+    if (data[i] && data[i].name && name == data[i].name) {  // TODO: better fuzzy matching?
+      console.log('Found name ' + name + ' with id ' + i.toString());
+      found_id = i;
+      break;
+    }
+  }
+
+  if (found_id) {
+    d3.select("#name_not_found").style('display', 'none');
+    createGraphFor(found_id);
+  } else {
+    d3.select("#name_not_found").style('display', 'block');
+  }
+});
