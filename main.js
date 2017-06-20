@@ -123,11 +123,11 @@ function ancestryGraph(id) {
   // Output is a d3-compatible edge list
   let nodeIdToName = {};
   let edgeSubset = [];
-  let unprocessed = [id];
+  let unprocessedAncestors = [id];
   let processed = new Set([]);
 
-  while (unprocessed.length > 0) {
-    let next = unprocessed.pop();
+  while (unprocessedAncestors.length > 0) {
+    let next = unprocessedAncestors.pop();
     processed.add(next);  // Ignore any self loops, which would be odd
     nodeIdToName[next] = data[next].name;
     let parents = data[next]['in'];
@@ -135,7 +135,22 @@ function ancestryGraph(id) {
     for (let parentId of parents) {
       edgeSubset.push([parentId, next]);
       if (!processed.has(parentId)) {
-        unprocessed.push(parentId);
+        unprocessedAncestors.push(parentId);
+      }
+    }
+  }
+
+  let unprocessedDescendants = [id];
+  while (unprocessedDescendants.length > 0) {
+    let next = unprocessedDescendants.pop();
+    processed.add(next);  // Ignore any self loops, which would be odd
+    nodeIdToName[next] = data[next].name;
+    let children = data[next]['out'];
+
+    for (let childId of children) {
+      edgeSubset.push([next, childId]);
+      if (!processed.has(childId)) {
+        unprocessedDescendants.push(childId);
       }
     }
   }
