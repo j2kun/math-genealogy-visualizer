@@ -171,7 +171,10 @@ var render = dagreD3.render();
 function createGraphFor(id) {
   var graph;
   let edgeStrings = ancestryGraph(id);
-  let graphString = "digraph {";
+  let graphString = "digraph { ";
+
+  graphString = graphString + " \"" + data[id].name + "\" [style=\"fill: #66ff66; font-weight: bold\"];";
+
   for (let edge of edgeStrings) {
     graphString = graphString + " " + edge + " ";
   }
