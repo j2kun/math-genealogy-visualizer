@@ -10,6 +10,14 @@ svg {
   overflow: hidden;
 }
 
+#hide_while_loading {
+  display: none;
+}
+
+#content {
+  margin-left: 20px;
+}
+
 .node {
   white-space: nowrap;
 }
@@ -39,19 +47,12 @@ rect {
   color: #ff0000;
 }
 
-.dropdown {
-  max-width: 200px;
-  z-index: 10;
-  max-height: 2em;
-  overflow: visible;
-  border: 1px solid black;
-}
-
-#autocomplete_results {
+.autocomplete {
   padding: 5px 0;
   margin: 0;
   background-color: #ffffff;
   max-width: 200px;
+  z-index: 0;
 }
 
 .autocomplete_option {
@@ -82,23 +83,44 @@ rect {
 </head>
 <body>
 
+<div id="content">
 <div id="loading">
 <div class="spinner"></div>
 <p>Loading...</p>
 </div>
 
 <div id="hide_while_loading">
-  <input id="name_input" placeholder="Enter a name" autocomplete="off" /> 
+  <div id="single_name_form">
+  <p>
+    <label>Enter a name</label>
+    <input id="single_name_input" placeholder="Enter a name" autocomplete="off" />
+  </p>
 
-  <div id="dropdown">
-    <ul id="autocomplete_results"> </ul>
+  <div>
+    <ul class="autocomplete" id="single_name_autocomplete_results"> </ul>
   </div>
 
-  <button type="button" id="ancestry_button">Draw Ancestry Tree</button>
+  <button type="button" id="ancestry_button">Draw Math Family Tree</button>
+  </div>
+
+  <div id="common_ancestor_form">
+  <p>
+    <label>Enter two names</label>
+    <input id="common_ancestor_input1" placeholder="Enter a name" autocomplete="off" />
+    <input id="common_ancestor_input2" placeholder="Enter a name" autocomplete="off" />
+  </p>
+
+  <div>
+    <ul class="autocomplete" id="common_ancestor_autocomplete_results"> </ul>
+  </div>
+
+  <button type="button" id="common_ancestry_button">Find Closest Common Advisor</button>
+  </div>
 
   <p>
     <span class="error" id="name_not_found">Name not found</span>
   </p>
+</div>
 </div>
 
 <script src="http://d3js.org/d3.v3.js"></script>

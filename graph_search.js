@@ -89,6 +89,33 @@ function commonAncestryGraph(graph, id1, id2) {
 }
 
 
+function descendantsCountExceeds(graph, id, threshold) {
+  // Determine if the id has more than threshold many descendants
+  let count = 0;
+  let unprocessedDescendants = [id];
+  let processed = new Set([]);
+
+  while (unprocessedDescendants.length > 0) {
+    let next = unprocessedDescendants.pop();
+    processed.add(next);  // Ignore any self loops, which would be odd
+    let children = graph[next]['out'];
+
+    for (let childId of children) {
+      if (!processed.has(childId)) {
+        count = count + 1;
+        unprocessedDescendants.push(childId);
+      }
+    }
+
+    if (count > threshold) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
 function ancestryGraph(graph, id, parentsOnly=false) {
   // Construct the graph of ancestors of the given node
   // Output is a Set of edges
@@ -125,13 +152,14 @@ function ancestryGraph(graph, id, parentsOnly=false) {
     }
   }
 
-  return edgeSubset;
+  return [...edgeSubset];
 }
 
 
 module.exports = {
-  shortestPath,
+  ancestryGraph,
   closestAncestor,
   commonAncestryGraph,
-  ancestryGraph,
+  descendantsCountExceeds,
+  shortestPath,
 };

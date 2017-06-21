@@ -6,11 +6,13 @@ import {
   ancestryGraph,
   closestAncestor,
   commonAncestryGraph,
+  descendantsCountExceeds,
   shortestPath,
 } from './graph_search';
 
 
 var data = null;  // Contains the raw graph data
+var nameToId = new Object();
 var fuzzyNames = FuzzySet.default();
 let width = 1280;
 let height = 1000;
@@ -60,6 +62,7 @@ function convertData(d) {
         'in': [],
         'out': [],
       };
+      nameToId[name] = mgp_id;
       fuzzyNames.add(name);
     }
   }
@@ -75,22 +78,20 @@ function convertData(d) {
 }
 
 
-function setSearchBar() {
-  console.log('Selecting ' + this.innerText);
-  d3.select('#name_input').property('value', this.innerText);
-  d3.select('#autocomplete_results').style('display', 'none');
-  renderFromSearch();
+function setSearchBar(text, textInputId, resultsId) {
+  d3.select(textInputId).property('value', text);
+  d3.select(resultsId).style('display', 'none');
 }
 
 
-function suggest() {
-  let searchString = d3.select('#name_input').property('value');
-  let autocomplete = d3.select('#autocomplete_results');
+function suggest(textInputId, resultsId) {
+  let searchString = d3.select(textInputId).property('value');
+  let autocomplete = d3.select(resultsId);
   console.log('Autocompleting ' + searchString);
 
   if (d3.event.keyCode == 13) {
     autocomplete.style('display', 'none');
-    renderFromSearch();
+    renderFromSearch(textInputId);
   } else {
     var results = null;
     if (searchString.length >= 3) {
@@ -109,7 +110,9 @@ function suggest() {
               .text(function (d) { return d[1]; });
     }
 
-    d3.selectAll('.autocomplete_option').on('click', setSearchBar);
+    autocomplete.selectAll('.autocomplete_option').on('click', function() {
+      setSearchBar(this.innerText, textInputId, resultsId);
+    });
     autocomplete.style('display', 'block');
   }
 }
@@ -123,6 +126,9 @@ d3.json("genealogy_graph.json", function(error, d) {
   console.log('Done converting data');
   d3.select('#hide_while_loading').style('display', 'block');
   d3.select('#loading').style('display', 'none');
+
+  let gauss = 18231;
+  createAncestryGraphFor(gauss);
 });
 
 
@@ -138,20 +144,8 @@ function edgeListToStrings(edges) {
 // Create and configure the renderer
 var render = dagreD3.render();
 
-function createGraphFor(id) {
+function renderGraph(graphString) {
   let graph;
-  let gauss = 18231;
-  let jeremy = 203505;
-  let edgeStrings = edgeListToStrings(commonAncestryGraph(data, id, jeremy));
-  let graphString = "digraph { ";
-
-  graphString = graphString + " \"" + data[id].name + "\" [style=\"fill: #66ff66; font-weight: bold\"];";
-
-  for (let edge of edgeStrings) {
-    graphString = graphString + " " + edge + " ";
-  }
-  graphString = graphString + "}";
-
   try {
     graph = graphlibDot.read(graphString);
   } catch (e) {
@@ -175,34 +169,81 @@ function createGraphFor(id) {
 }
 
 
-function renderFromSearch() {
-  let name = d3.select('#name_input').property("value");
-  name = name.trim();
-
-  let found_id = null;
-  for (let i = 0, n = data.length; i < n; i++) {
-    if (data[i] && data[i].name && name == data[i].name) {
-      console.log('Found name ' + name + ' with id ' + i.toString());
-      found_id = i;
-      break;
-    }
+function createAncestryGraphFor(id) {
+  let parentsOnly = false;
+  if (descendantsCountExceeds(data, id, 1000)) {
+    console.log("the graph is too big!");
+    parentsOnly = true;
   }
 
-  if (found_id) {
+  let edgeStrings = edgeListToStrings(ancestryGraph(data, id, parentsOnly));
+  let graphString = "digraph { ";
+
+  graphString = graphString + " \"" + data[id].name + "\" [style=\"fill: #66ff66; font-weight: bold\"];";
+
+  for (let edge of edgeStrings) {
+    graphString = graphString + " " + edge + " ";
+  }
+  graphString = graphString + "}";
+
+  return renderGraph(graphString);
+}
+
+
+function createCommonAncestryGraphFor(id1, id2) {
+  let edgeStrings = edgeListToStrings(commonAncestryGraph(data, id1, id2));
+  let graphString = "digraph { ";
+
+  graphString = graphString + " \"" + data[id1].name + "\" [style=\"fill: #66ff66; font-weight: bold\"];";
+  graphString = graphString + " \"" + data[id2].name + "\" [style=\"fill: #6666ff; font-weight: bold\"];";
+
+  for (let edge of edgeStrings) {
+    graphString = graphString + " " + edge + " ";
+  }
+  graphString = graphString + "}";
+
+  return renderGraph(graphString);
+}
+
+function setOrClearErrorField(name, id) {
+  if (id) {
     d3.select("#name_not_found").style('display', 'none');
-    createGraphFor(found_id);
   } else {
-    d3.select("#name_not_found").style('display', 'block');
+    d3.select("#name_not_found").style('display', 'block').text("Name '" + name + "' not found.");
+  }
+}
+
+function getIdFromSearch(textInputId) {
+  let name = d3.select(textInputId).property("value").trim();
+  let id = nameToId[name];
+  setOrClearErrorField(name, id);
+  return id;
+}
+
+
+function renderAncestryGraphFromSearch() {
+  let id = getIdFromSearch('#single_name_input');
+  if (id) {
+    createAncestryGraphFor(id);
+  }
+}
+
+function renderCommonAncestryGraphFromSearch() {
+  let id1 = getIdFromSearch('#common_ancestor_input1');
+  let id2 = getIdFromSearch('#common_ancestor_input2');
+  if (id1 && id2) {
+    createCommonAncestryGraphFor(id1, id2);
   }
 }
 
 
-d3.select("#name_input").on("keyup", suggest);
-d3.select('#ancestry_button').on('click', renderFromSearch);
+d3.select("#single_name_input").on("keyup", () => suggest("#single_name_input", "#single_name_autocomplete_results"));
+d3.select('#ancestry_button').on('click', renderAncestryGraphFromSearch);
+
+d3.select("#common_ancestor_input1").on("keyup", () => suggest("#common_ancestor_input1", "#common_ancestor_autocomplete_results"));
+d3.select("#common_ancestor_input2").on("keyup", () => suggest("#common_ancestor_input2", "#common_ancestor_autocomplete_results"));
+d3.select('#common_ancestry_button').on('click', renderCommonAncestryGraphFromSearch);
+
 d3.select('#autocomplete_results').style('display', 'none');
 d3.select('#loading').style('display', 'block');
 d3.select('#hide_while_loading').style('display', 'none');
-
-
-window.shortestPath = shortestPath;
-window.closestAncestor = closestAncestor;
