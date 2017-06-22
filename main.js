@@ -14,9 +14,9 @@ import {
 var data = null;  // Contains the raw graph data
 var nameToId = new Object();
 var fuzzyNames = FuzzySet.default();
-let width = 1280;
-let height = 1000;
-let svg = d3.select("body").append("svg")
+let width = 1000;
+let height = 800;
+let svg = d3.select("#content").append("svg")
                            .attr("width", width)
                            .attr("height", height)
                            .style("cursor", "move");
@@ -191,7 +191,14 @@ function createAncestryGraphFor(id) {
 
 
 function createCommonAncestryGraphFor(id1, id2) {
-  let edgeStrings = edgeListToStrings(commonAncestryGraph(data, id1, id2));
+  let graph = commonAncestryGraph(data, id1, id2);
+  setOrClearErrorField("No common ancestors!", graph);
+
+  if (!graph) {
+    return;
+  }
+
+  let edgeStrings = edgeListToStrings(graph);
   let graphString = "digraph { ";
 
   graphString = graphString + " \"" + data[id1].name + "\" [style=\"fill: #66ff66; font-weight: bold\"];";
@@ -205,18 +212,18 @@ function createCommonAncestryGraphFor(id1, id2) {
   return renderGraph(graphString);
 }
 
-function setOrClearErrorField(name, id) {
-  if (id) {
+function setOrClearErrorField(text, condition) {
+  if (condition) {
     d3.select("#name_not_found").style('display', 'none');
   } else {
-    d3.select("#name_not_found").style('display', 'block').text("Name '" + name + "' not found.");
+    d3.select("#name_not_found").style('display', 'block').text(text);
   }
 }
 
 function getIdFromSearch(textInputId) {
   let name = d3.select(textInputId).property("value").trim();
   let id = nameToId[name];
-  setOrClearErrorField(name, id);
+  setOrClearErrorField("Name '" + name + "' not found.", id);
   return id;
 }
 
