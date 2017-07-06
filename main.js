@@ -1,6 +1,7 @@
+import * as FileSaver from 'file-saver';
+import * as FuzzySet from 'fuzzyset.js';
 import * as dagreD3 from 'dagre-d3';
 import * as graphlibDot from 'graphlib-dot';
-import * as FuzzySet from 'fuzzyset.js';
 
 import {
   ancestryGraph,
@@ -17,6 +18,7 @@ var fuzzyNames = FuzzySet.default();
 let width = 1000;
 let height = 800;
 let svg = d3.select("#content").append("svg")
+                           .attr('id', 'rendered_graph')
                            .attr("width", width)
                            .attr("height", height)
                            .style("cursor", "move");
@@ -243,9 +245,89 @@ function renderCommonAncestryGraphFromSearch() {
   }
 }
 
+/* save offline */
+
+// From http://bl.ocks.org/Rokotyan/0556f8facbaf344507cdc45dc3622177
+function getSVGString( svgNode ) {
+	svgNode.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
+	var cssStyleText = getCSSStyles( svgNode );
+	appendCSS( cssStyleText, svgNode );
+
+	var serializer = new XMLSerializer();
+	var svgString = serializer.serializeToString(svgNode);
+	svgString = svgString.replace(/(\w+)?:?xlink=/g, 'xmlns:xlink='); // Fix root xlink without namespace
+	svgString = svgString.replace(/NS\d+:href/g, 'xlink:href'); // Safari NS namespace fix
+
+	return svgString;
+
+	function getCSSStyles( parentElement ) {
+		var selectorTextArr = [];
+
+		// Add Parent element Id and Classes to the list
+		selectorTextArr.push( '#'+parentElement.id );
+		for (var c = 0; c < parentElement.classList.length; c++)
+				if ( !contains('.'+parentElement.classList[c], selectorTextArr) )
+					selectorTextArr.push( '.'+parentElement.classList[c] );
+
+		// Add Children element Ids and Classes to the list
+		var nodes = parentElement.getElementsByTagName("*");
+		for (var i = 0; i < nodes.length; i++) {
+			var id = nodes[i].id;
+			if ( !contains('#'+id, selectorTextArr) )
+				selectorTextArr.push( '#'+id );
+
+			var classes = nodes[i].classList;
+			for (var c = 0; c < classes.length; c++)
+				if ( !contains('.'+classes[c], selectorTextArr) )
+					selectorTextArr.push( '.'+classes[c] );
+		}
+
+		// Extract CSS Rules
+		var extractedCSSText = "";
+		for (var i = 0; i < document.styleSheets.length; i++) {
+			var s = document.styleSheets[i];
+
+			try {
+			    if(!s.cssRules) continue;
+			} catch( e ) {
+		    		if(e.name !== 'SecurityError') throw e; // for Firefox
+		    		continue;
+		    	}
+
+			var cssRules = s.cssRules;
+			for (var r = 0; r < cssRules.length; r++) {
+				if ( contains( cssRules[r].selectorText, selectorTextArr ) )
+					extractedCSSText += cssRules[r].cssText;
+			}
+		}
+
+
+		return extractedCSSText;
+
+		function contains(str,arr) {
+			return arr.indexOf( str ) === -1 ? false : true;
+		}
+
+	}
+
+	function appendCSS( cssText, element ) {
+		var styleElement = document.createElement("style");
+		styleElement.setAttribute("type","text/css");
+		styleElement.innerHTML = cssText;
+		var refNode = element.hasChildNodes() ? element.children[0] : null;
+		element.insertBefore( styleElement, refNode );
+	}
+}
+
+function save_graph() {
+  // convert DOM subtree to text
+  var svgString = getSVGString(svg.node());
+  FileSaver.saveAs(new Blob([svgString], {type:"application/svg+xml"}), 'tree.svg');
+}
 
 d3.select("#single_name_input").on("keyup", () => suggest("#single_name_input", "#single_name_autocomplete_results"));
 d3.select('#ancestry_button').on('click', renderAncestryGraphFromSearch);
+d3.select('#download').on('click', save_graph);
 
 d3.select("#common_ancestor_input1").on("keyup", () => suggest("#common_ancestor_input1", "#common_ancestor_autocomplete_results"));
 d3.select("#common_ancestor_input2").on("keyup", () => suggest("#common_ancestor_input2", "#common_ancestor_autocomplete_results"));
