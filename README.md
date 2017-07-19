@@ -1,6 +1,6 @@
 # Math genealogy visualizer
 
-[Live demo](j2kun.github.io/math-genealogy/index.html) (takes about 15s to
+[Live demo](https://j2kun.github.io/math-genealogy/index.html) (takes about 15s to
 load)
 
 ## Building locally
