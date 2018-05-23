@@ -168,8 +168,7 @@ function renderGraph(graphString) {
   return graph;
 }
 
-
-function createAncestryGraphFor(id) {
+function createAncestryGraphStringFor(id) {
   let parentsOnly = false;
   if (descendantsCountExceeds(data, id, 1000)) {
     console.log("the graph is too big!");
@@ -179,16 +178,19 @@ function createAncestryGraphFor(id) {
   let edgeStrings = edgeListToStrings(ancestryGraph(data, id, parentsOnly));
   let graphString = "digraph { ";
 
-  graphString = graphString + " \"" + data[id].name + "\" [style=\"fill: #66ff66; font-weight: bold\"];";
+  graphString = graphString + "\n \"" + data[id].name + "\" [style=\"fill: #66ff66; font-weight: bold\"];\n";
 
   for (let edge of edgeStrings) {
-    graphString = graphString + " " + edge + " ";
+    graphString = graphString + " " + edge + "\n";
   }
-  graphString = graphString + "}";
+  graphString = graphString + "}\n";
 
-  return renderGraph(graphString);
+  return graphString;
 }
 
+function createAncestryGraphFor(id) {
+  return renderGraph(createAncestryGraphStringFor(id));
+}
 
 function createCommonAncestryGraphFor(id1, id2) {
   let graph = commonAncestryGraph(data, id1, id2);
@@ -243,6 +245,27 @@ function renderCommonAncestryGraphFromSearch() {
   }
 }
 
+function download(filename, text) {
+    var pom = document.createElement('a');
+    pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    pom.setAttribute('download', filename);
+
+    if (document.createEvent) {
+        var event = document.createEvent('MouseEvents');
+        event.initEvent('click', true, true);
+        pom.dispatchEvent(event);
+    }
+    else {
+        pom.click();
+    }
+}
+
+function downloadDotFile() {
+  let id = getIdFromSearch('#single_name_input');
+  if (id) {
+    download('ancestry_graph.dot', createAncestryGraphStringFor(id));
+  }
+}
 
 d3.select("#single_name_input").on("keyup", () => suggest("#single_name_input", "#single_name_autocomplete_results"));
 d3.select('#ancestry_button').on('click', renderAncestryGraphFromSearch);
@@ -254,3 +277,5 @@ d3.select('#common_ancestry_button').on('click', renderCommonAncestryGraphFromSe
 d3.select('#autocomplete_results').style('display', 'none');
 d3.select('#loading').style('display', 'block');
 d3.select('#hide_while_loading').style('display', 'none');
+
+d3.select('#download').on('click', downloadDotFile);
