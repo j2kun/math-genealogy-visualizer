@@ -1,14 +1,22 @@
-
-function shortestPath(graph, source, target) {
+function shortestPath(graph, source, target, depth) {
   // DFS to find shortest path
   // Return a list of edges from source -> target
   if (source == target) {
     return [];  // interpreted as truthy
   }
 
+  if (depth === undefined) {
+    depth = 0;
+  }
+
+  // avoid unexpected cycles
+  if (depth > 1000) {
+    return undefined;
+  }
+
   if (graph[source]) {
     for (let child of graph[source]['out']) {
-      let foundEdges = shortestPath(graph, child, target);
+      let foundEdges = shortestPath(graph, child, target, depth+1);
       if (foundEdges) {  // empty list interpreted as truthy
         foundEdges.unshift([source, child]);  // push new edge to front
         return foundEdges;

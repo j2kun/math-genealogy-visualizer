@@ -70,8 +70,13 @@ function convertData(d) {
   for (let i = 0, n = edges.length; i < n; i++) {
     let source = edges[i][0];
     let target = edges[i][1];
-    graph[source]['out'].push(target);
-    graph[target]['in'].push(source);
+
+    // sometimes the dataset can be missing entries, then the graph entry
+    // will be null, and we filter them out
+    if (graph[source] != null && graph[target] != null) {
+      graph[source]['out'].push(target);
+      graph[target]['in'].push(source);
+    }
   }
 
   return graph;
