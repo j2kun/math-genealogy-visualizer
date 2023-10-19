@@ -34,6 +34,6 @@ find [here](https://github.com/j2kun/math-genealogy-scraper) as `data.json`) is
 loaded into the user's browser, a search index is built for name lookups, and
 then Gauss's tree is displayed.
 
-The user can then choose a single name to display the ancestry for, or else show
-the subset of the graph which contains the closest common ancestor of any two
-nodes that are in the same connected component.
+The user can then choose a single name for which to display the ancestry, or
+else show the subset of the graph which contains the closest common ancestor of
+any two nodes that are in the same connected component.
